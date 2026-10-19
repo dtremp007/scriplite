@@ -56,8 +56,17 @@ cargo build --release
 SCRIPLITE_REQUIRE_PDFIUM=1 cargo test
 ```
 
-The end-to-end tests in `tests/real_world.rs` use a private screenplay that is
-not distributed with the source; they skip when `tests/fixtures/` is empty.
+End-to-end tests run against `tests/fixtures/public/sample-screenplay.pdf`, a
+short original screenplay produced by `cargo run --example sample_screenplay`;
+regenerate it after changing the example, or the tests will flag it as stale.
+To try the tool on it:
+
+```sh
+scriplite inspect tests/fixtures/public/sample-screenplay.pdf
+```
+
+The tests in `tests/real_world.rs` use a private screenplay that is not
+distributed with the source, and skip when it is absent.
 
 To build a release archive in `dist/` (default: this machine's platform):
 
