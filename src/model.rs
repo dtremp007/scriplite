@@ -266,10 +266,7 @@ pub fn normalize_character_name(value: &str) -> String {
 
 pub fn strip_cue_extensions(value: &str) -> String {
     let mut result = value.trim();
-    loop {
-        let Some(close) = result.strip_suffix(')') else {
-            break;
-        };
+    while let Some(close) = result.strip_suffix(')') {
         let Some(open_index) = close.rfind('(') else {
             break;
         };
