@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      matrix:
+        include:
+          - platform: linux-x64
+            os: ubuntu-latest
+          - platform: linux-arm64
+            os: ubuntu-latest
+            cross: true
+          - platform: mac-arm64
+            os: macos-latest
+          - platform: mac-x64
+            os: macos-latest
+            cross: true
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check tag matches Cargo.toml version
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)
+          test "v$version" = "$GITHUB_REF_NAME" || {
+            echo "tag $GITHUB_REF_NAME does not match Cargo.toml version $version" >&2
+            exit 1
+          }
+      - run: rustup toolchain install stable --profile minimal
+      - if: startsWith(matrix.platform, 'linux-')
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.13.0
+      - if: startsWith(matrix.platform, 'linux-')
+        run: cargo install --locked cargo-zigbuild
+      - if: matrix.platform == 'mac-x64'
+        run: rustup target add x86_64-apple-darwin
+      - id: package
+        run: echo "archive=$(./scripts/package.sh ${{ matrix.platform }})" >>"$GITHUB_OUTPUT"
+      - name: Smoke test the packaged release
+        if: ${{ !matrix.cross }}
+        run: |
+          mkdir smoke
+          tar -xzf "${{ steps.package.outputs.archive }}" -C smoke
+          ./smoke/*/install.sh --prefix "$PWD/smoke/prefix"
+          ./smoke/prefix/bin/scriplite --version
+          # Pdfium is bound before the input is read, so reaching the input error
+          # proves the bundled library loads.
+          if ./smoke/prefix/bin/scriplite inspect missing.pdf 2>smoke/stderr; then exit 1; fi
+          cat smoke/stderr
+          grep -q "could not read input PDF" smoke/stderr
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: dist/*.tar.gz*
+
+  publish:
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

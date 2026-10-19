@@ -1,0 +1,6 @@
+target
+dist
+vendor
+tests
+.git
+.DS_Store

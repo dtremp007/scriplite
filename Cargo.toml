@@ -1,0 +1,26 @@
+[package]
+name = "scriplite"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Generate one character-highlighted PDF per screenplay speaker"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/dtremp007/scriplite"
+
+[dependencies]
+clap = { version = "4.5.41", features = ["derive"] }
+lopdf = "0.38.0"
+pdfium-render = { version = "0.9.3", default-features = false, features = ["pdfium_latest"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+sha2 = "0.10.9"
+tempfile = "3.20.0"
+thiserror = "2.0.12"
+unicode-normalization = "0.1.24"
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"
+
+[profile.release]
+lto = "thin"
+strip = "symbols"

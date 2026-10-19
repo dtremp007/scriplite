@@ -1,0 +1,9 @@
+/target/
+/output/
+/dist/
+/vendor/pdfium/
+*.tmp
+.DS_Store
+
+# Private screenplay fixtures for tests/real_world.rs; not distributed.
+/tests/fixtures/*.pdf
