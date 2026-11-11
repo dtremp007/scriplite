@@ -3,11 +3,10 @@ mod common;
 use scriplite::batch::{GenerateOptions, generate};
 use scriplite::{AppError, Color, PdfEngine, analyze_pdf};
 
-use common::{count_highlight_rectangles, fixture, lock};
+use common::{DEFAULT_FILL, count_highlight_rectangles, fixture, lock};
 
 const SOURCE: &str = "Dee Clock - 2026-07-25.pdf";
 const REFERENCE: &str = "Dee Clock (Mike).pdf";
-const DEFAULT_FILL: &str = "0.996078 0.996078 0.498039 rg";
 
 /// The screenplay fixtures here are private and are not distributed with the
 /// source, so these tests skip without them; tests/sample_screenplay.rs covers
