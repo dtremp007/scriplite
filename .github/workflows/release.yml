@@ -54,11 +54,10 @@ jobs:
           tar -xzf "${{ steps.package.outputs.archive }}" -C smoke
           ./smoke/*/install.sh --prefix "$PWD/smoke/prefix"
           ./smoke/prefix/bin/scriplite --version
-          # Pdfium is bound before the input is read, so reaching the input error
-          # proves the bundled library loads.
-          if ./smoke/prefix/bin/scriplite inspect missing.pdf 2>smoke/stderr; then exit 1; fi
-          cat smoke/stderr
-          grep -q "could not read input PDF" smoke/stderr
+          ./smoke/prefix/bin/scriplite inspect tests/fixtures/public/sample-screenplay.pdf
+          ./smoke/prefix/bin/scriplite generate tests/fixtures/public/sample-screenplay.pdf \
+            --output-dir smoke/out
+          test "$(ls smoke/out/*.pdf | wc -l)" -eq 3
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}

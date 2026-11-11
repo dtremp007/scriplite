@@ -1,35 +1,19 @@
-use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+mod common;
 
-use lopdf::Document;
 use scriplite::batch::{GenerateOptions, generate};
 use scriplite::{AppError, Color, PdfEngine, analyze_pdf};
 
-static PDFIUM_TEST_LOCK: Mutex<()> = Mutex::new(());
-
-fn fixture(name: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures")
-        .join(name)
-}
+use common::{count_highlight_rectangles, fixture, lock};
 
 const SOURCE: &str = "Dee Clock - 2026-07-25.pdf";
 const REFERENCE: &str = "Dee Clock (Mike).pdf";
+const DEFAULT_FILL: &str = "0.996078 0.996078 0.498039 rg";
 
-/// Binds Pdfium (required when SCRIPLITE_REQUIRE_PDFIUM is set) and returns it
-/// only if the named fixtures exist. The screenplay fixtures are private and are
-/// not distributed with the source, so these tests skip without them.
+/// The screenplay fixtures here are private and are not distributed with the
+/// source, so these tests skip without them; tests/sample_screenplay.rs covers
+/// the same paths with a public fixture.
 fn engine_with_fixtures(names: &[&str]) -> Option<PdfEngine> {
-    let engine = match PdfEngine::bind() {
-        Ok(engine) => engine,
-        Err(error) if std::env::var_os("SCRIPLITE_REQUIRE_PDFIUM").is_some() => {
-            panic!("SCRIPLITE_REQUIRE_PDFIUM is set but Pdfium is unavailable: {error}")
-        }
-        Err(error) => {
-            eprintln!("skipping real-world PDF test because Pdfium is unavailable: {error}");
-            return None;
-        }
-    };
+    let engine = common::bind_engine()?;
     if let Some(missing) = names.iter().find(|name| !fixture(name).is_file()) {
         eprintln!("skipping real-world PDF test because fixture '{missing}' is missing");
         return None;
@@ -39,7 +23,7 @@ fn engine_with_fixtures(names: &[&str]) -> Option<PdfEngine> {
 
 #[test]
 fn dee_clock_detection_matches_reference_counts() {
-    let _guard = PDFIUM_TEST_LOCK.lock().unwrap();
+    let _guard = lock();
     let Some(engine) = engine_with_fixtures(&[SOURCE]) else {
         return;
     };
@@ -76,7 +60,7 @@ fn dee_clock_detection_matches_reference_counts() {
 
 #[test]
 fn generated_mike_pdf_preserves_text_and_has_213_yellow_rectangles() {
-    let _guard = PDFIUM_TEST_LOCK.lock().unwrap();
+    let _guard = lock();
     let Some(engine) = engine_with_fixtures(&[SOURCE]) else {
         return;
     };
@@ -98,7 +82,7 @@ fn generated_mike_pdf_preserves_text_and_has_213_yellow_rectangles() {
             .join("Dee Clock - 2026-07-25.manifest.json")
             .is_file()
     );
-    assert_eq!(count_highlight_rectangles(&output), 213);
+    assert_eq!(count_highlight_rectangles(&output, DEFAULT_FILL), 213);
 
     let collision = generate(&engine, &options).unwrap_err();
     assert!(matches!(collision, AppError::Collision(_)));
@@ -106,35 +90,12 @@ fn generated_mike_pdf_preserves_text_and_has_213_yellow_rectangles() {
     let mut forced = options;
     forced.force = true;
     generate(&engine, &forced).unwrap();
-    assert_eq!(count_highlight_rectangles(&output), 213);
-}
-
-fn count_highlight_rectangles(path: &Path) -> usize {
-    let document = Document::load(path).unwrap();
-    let mut count = 0;
-    for page_id in document.get_pages().into_values() {
-        for content_id in document.get_page_contents(page_id) {
-            let Ok(stream) = document
-                .get_object(content_id)
-                .and_then(|object| object.as_stream())
-            else {
-                continue;
-            };
-            let Ok(bytes) = stream.decompressed_content() else {
-                continue;
-            };
-            let text = String::from_utf8_lossy(&bytes);
-            if text.contains("0.996078 0.996078 0.498039 rg") {
-                count += text.matches(" re f\n").count();
-            }
-        }
-    }
-    count
+    assert_eq!(count_highlight_rectangles(&output, DEFAULT_FILL), 213);
 }
 
 #[test]
 fn reference_files_have_identical_extracted_words() {
-    let _guard = PDFIUM_TEST_LOCK.lock().unwrap();
+    let _guard = lock();
     let Some(engine) = engine_with_fixtures(&[SOURCE, REFERENCE]) else {
         return;
     };
