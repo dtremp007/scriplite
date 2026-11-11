@@ -3,6 +3,16 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # Build and smoke test every platform, without publishing, whenever the
+  # packaging could have changed, so a broken release surfaces before tagging.
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - scripts/**
+      - Cargo.toml
+      - Cargo.lock
+      - tests/fixtures/public/**
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -30,6 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check tag matches Cargo.toml version
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)
           test "v$version" = "$GITHUB_REF_NAME" || {
@@ -66,6 +77,7 @@ jobs:
 
   publish:
     needs: package
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
       contents: write

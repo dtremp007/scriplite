@@ -6,6 +6,9 @@ use std::sync::{Mutex, MutexGuard};
 use lopdf::Document;
 use scriplite::PdfEngine;
 
+/// Fill operator for the default yellow highlight (#FEFE7F).
+pub const DEFAULT_FILL: &str = "0.996078 0.996078 0.498039 rg";
+
 /// Pdfium is not thread-safe, so tests that use it run one at a time.
 static PDFIUM_TEST_LOCK: Mutex<()> = Mutex::new(());
 

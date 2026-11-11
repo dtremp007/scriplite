@@ -14,10 +14,9 @@ use scriplite::model::{DialogueLane, GenerationManifest};
 use scriplite::{AppError, Color, analyze_pdf};
 use sha2::{Digest, Sha256};
 
-use common::{bind_engine, count_highlight_rectangles, fixture, lock};
+use common::{DEFAULT_FILL, bind_engine, count_highlight_rectangles, fixture, lock};
 
 const SAMPLE: &str = "public/sample-screenplay.pdf";
-const DEFAULT_FILL: &str = "0.996078 0.996078 0.498039 rg";
 
 /// (name, cue blocks, dual blocks, highlighted visual lines), in script order.
 const EXPECTED: [(&str, usize, usize, usize); 3] = [
